@@ -3,23 +3,37 @@
 #include <iostream>
 using namespace cv;
 using namespace std;
-int value;
+int value=0;
 int value_max = 200;
 int value_c;
+void distance(Mat bluematting, int value);
+Mat bluematting;
+Mat result;
+
 void on_Trackbar(int, void*)
 {
 	value_c = value;
+	distance(bluematting, value_c);
+	namedWindow("result", CV_WINDOW_NORMAL);
+	imshow("result",result);
 }
 int main()
+{
+	bluematting = imread("1.jpg");
+	result = Mat::zeros(bluematting.rows, bluematting.cols, CV_8UC1);
+	namedWindow("result", 0);
+	createTrackbar("阈值", "result", &value, value_max, on_Trackbar);
+	imshow("result", bluematting);
+	waitKey(0);
+	return 0;
+}
+void distance(Mat bluematting, int value)
 {   
-	namedWindow("result", CV_WINDOW_NORMAL);
-	Mat bluematting = imread("1.jpg");
-	Mat result = Mat::zeros(bluematting.rows, bluematting.cols, CV_8UC1);
+	//Mat result = Mat::zeros(bluematting.rows, bluematting.cols, CV_8UC1);
 	int b, g, r;
 	double dis;
 	int height = bluematting.rows;
 	int width = bluematting.cols;
-	createTrackbar("阈值", "result", &value, value_max, on_Trackbar);
 	for (int i = 0; i < height;i++){
 		uchar *presult = result.ptr<uchar>(i);
 		uchar *pbg = bluematting.ptr<uchar>(i);
@@ -29,7 +43,7 @@ int main()
 			g = *pbg++;
 			r = *pbg++;
 			dis = sqrt(pow((b - 230), 2) + pow((g - 126), 2) + pow((r - 61), 2));
-			if (dis <= value_c){
+			if (dis <= value){
 				*presult++ = 0;
 			}
 			else
@@ -39,7 +53,4 @@ int main()
 			//cout << dis <<"   ";
 		}
 	}
-	imshow("result",result);
-	waitKey(0);
-	return 0;
 }
