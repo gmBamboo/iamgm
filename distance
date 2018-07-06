@@ -1,0 +1,45 @@
+#include<opencv2\opencv.hpp>
+#include<math.h>
+#include <iostream>
+using namespace cv;
+using namespace std;
+int value;
+int value_max = 200;
+int value_c;
+void on_Trackbar(int, void*)
+{
+	value_c = value;
+}
+int main()
+{   
+	namedWindow("result", CV_WINDOW_NORMAL);
+	Mat bluematting = imread("1.jpg");
+	Mat result = Mat::zeros(bluematting.rows, bluematting.cols, CV_8UC1);
+	int b, g, r;
+	double dis;
+	int height = bluematting.rows;
+	int width = bluematting.cols;
+	createTrackbar("阈值", "result", &value, value_max, on_Trackbar);
+	for (int i = 0; i < height;i++){
+		uchar *presult = result.ptr<uchar>(i);
+		uchar *pbg = bluematting.ptr<uchar>(i);
+		for (int j = 0; j < width; j++)
+		{
+			b = *pbg++;
+			g = *pbg++;
+			r = *pbg++;
+			dis = sqrt(pow((b - 230), 2) + pow((g - 126), 2) + pow((r - 61), 2));
+			if (dis <= value_c){
+				*presult++ = 0;
+			}
+			else
+			{
+				*presult++ = dis;
+			}
+			//cout << dis <<"   ";
+		}
+	}
+	imshow("result",result);
+	waitKey(0);
+	return 0;
+}
