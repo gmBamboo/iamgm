@@ -14,12 +14,15 @@ void on_Trackbar(int, void*)
 {
 	value_c = value;
 	distance(bluematting, value_c);
+	//GaussianBlur(bluematting, bluematting, Size(3, 3), 0);
 	namedWindow("result", CV_WINDOW_NORMAL);
 	imshow("result",result);
 }
 int main()
-{
+{   
+	Mat hsv;
 	bluematting = imread("1.jpg");
+	//cvtColor(bluematting, hsv, COLOR_BGR2HSV);
 	result = Mat::zeros(bluematting.rows, bluematting.cols, CV_8UC1);
 	namedWindow("result", 0);
 	createTrackbar("阈值", "result", &value, value_max, on_Trackbar);
@@ -42,7 +45,7 @@ void distance(Mat bluematting, int value)
 			b = *pbg++;
 			g = *pbg++;
 			r = *pbg++;
-			dis = sqrt(pow((b - 230), 2) + pow((g - 126), 2) + pow((r - 61), 2));
+			dis = sqrt(pow((b - 149), 2) + pow((g - 47), 2) + pow((r - 12), 2));
 			if (dis <= value){
 				*presult++ = 0;
 			}
