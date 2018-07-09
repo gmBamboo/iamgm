@@ -3,16 +3,10 @@
 #include "func.cpp"
 using namespace std;
 using namespace cv;
-//¶¨ÒåÁ½ÕÅ±³¾°Í¼
+//å®šä¹‰ä¸¤å¼ èƒŒæ™¯å›¾
 //Mat background_01;
 //Mat background_02;
 //Mat background;
-int h_l;
-int h_h;
-int s_l = 100;
-int s_h;
-int v_l;
-int v_h;
 
 int h_max = 255;
 int s_max = 255;
@@ -24,30 +18,27 @@ int s_low = 100;
 int s_high;
 int v_low;
 int v_high;
+int value = 0;
 
-//Ñ­»·²¥·Å
+//å¾ªç¯æ’­æ”¾
 int currentFrames = 1;
 int currentFramesbg = 1;
 
-//¸¯Ê´/ÅòÕÍµÄÄÚºË´óĞ¡
+//è…èš€/è†¨èƒ€çš„å†…æ ¸å¤§å°
 //int erode_structElementSize = 0;
-//ÂÌÄ»¿ÙÍ¼µÄÊµÏÖº¯Êı
+//ç»¿å¹•æŠ å›¾çš„å®ç°å‡½æ•°
 int dilate_structElementSize = 1;
-//Í¸Ã÷Öµ
+//é€æ˜å€¼
 int AlphaValueSilder = 0;
 
 Mat replace_and_blend(Mat &frame, Mat &mask, Mat &background);
 Mat erode_and_dilate(Mat &mask, int dilate_structElementSize);
+void distance(cv::Mat &frame, int value);
+//è·ç¦»å›¾
+Mat dist;
 void on_Trackbar(int, void*)
 {
-	h_l = h_low;
-	h_h = h_high;
 
-	s_l = s_low;
-	s_h = s_high;
-
-	v_l = v_low;
-	v_h = v_high;
 }
 
 int main()
@@ -63,7 +54,7 @@ int main()
 	// check if we succeeded  
 	VideoWriter write(filename, codec, fps, videoSize, 1);
 
-	//¶ÁÈëÊÓÆµ
+	//è¯»å…¥è§†é¢‘
 	VideoCapture capture, capturebg;
 	capture.open("001.mp4");
 	if (!capture.isOpened())
@@ -73,66 +64,74 @@ int main()
 		cout << "fail to open!!!" << endl;
 	int totalFrames = capture.get(CV_CAP_PROP_FRAME_COUNT);
 	int totalFramesbg = capturebg.get(CV_CAP_PROP_FRAME_COUNT);
-	//char * title = "¶ÁÈ¡ÊÓÆµ";
-	//char * resultWin = "Ğ§¹ûÍ¼";
-	//namedWindow("¶ÁÈ¡ÊÓÆµ", CV_WINDOW_NORMAL);
-	//resizeWindow("¶ÁÈ¡ÊÓÆµ", 960,1000);
-	//moveWindow("¶ÁÈ¡ÊÓÆµ",0,0);
-	namedWindow("Ğ§¹ûÍ¼", CV_WINDOW_NORMAL);
-	resizeWindow("Ğ§¹ûÍ¼", 960, 1000);
-	moveWindow("Ğ§¹ûÍ¼", 0, 0);
+	//char * title = "è¯»å–è§†é¢‘";
+	//char * resultWin = "æ•ˆæœå›¾";
+	//namedWindow("è¯»å–è§†é¢‘", CV_WINDOW_NORMAL);
+	//resizeWindow("è¯»å–è§†é¢‘", 960,1000);
+	//moveWindow("è¯»å–è§†é¢‘",0,0);
+	namedWindow("æ•ˆæœå›¾", CV_WINDOW_NORMAL);
+	resizeWindow("æ•ˆæœå›¾", 960, 1000);
+	moveWindow("æ•ˆæœå›¾", 0, 0);
 	namedWindow("mask", CV_WINDOW_NORMAL);
-	resizeWindow("mask", 960, 1000);
+	resizeWindow("mask", 960, 500);
 	moveWindow("mask", 950, 0);
-	//Mat frame,framebg;//¶¨ÒåÒ»¸öMat±äÁ¿£¬ÓÃÀ´´æ´¢Ã¿Ò»Ö¡µÄÍ¼Ïñ
+	namedWindow("è·ç¦»å›¾", CV_WINDOW_NORMAL);
+	resizeWindow("è·ç¦»å›¾", 960, 500);
+	moveWindow("è·ç¦»å›¾", 950, 500);
+	//Mat frame,framebg;//å®šä¹‰ä¸€ä¸ªMatå˜é‡ï¼Œç”¨æ¥å­˜å‚¨æ¯ä¸€å¸§çš„å›¾åƒ
 	Mat hsv, mask;
-	//Èç¹û¶Áµ½ÁËÃ¿Ò»Ö¡µÄÍ¼Ïñ
+	//å¦‚æœè¯»åˆ°äº†æ¯ä¸€å¸§çš„å›¾åƒ
 	while (1)
 	{
 		Mat frame, framebg;
 		capture >> frame;
 		capturebg >> framebg;
-		//½«Ã¿Ò»Ö¡µÄÍ¼Ïñ×ª»»µ½hsv¿Õ¼ä
+		//å°†æ¯ä¸€å¸§çš„å›¾åƒè½¬æ¢åˆ°hsvç©ºé—´
 		cvtColor(frame, hsv, COLOR_BGR2HSV);
 
-		//createTrackbar("h_low", "¶ÁÈ¡ÊÓÆµ", &h_low, h_max, on_Trackbar);
-		//createTrackbar("h_high", "¶ÁÈ¡ÊÓÆµ", &h_high, h_max, on_Trackbar);
+		//createTrackbar("h_low", "è¯»å–è§†é¢‘", &h_low, h_max, on_Trackbar);
+		//createTrackbar("h_high", "è¯»å–è§†é¢‘", &h_high, h_max, on_Trackbar);
 
-		createTrackbar("s_low", "Ğ§¹ûÍ¼", &s_low, h_max, on_Trackbar);
-		createTrackbar("s_high", "Ğ§¹ûÍ¼", &s_high, h_max, on_Trackbar);
+		createTrackbar("s_low", "æ•ˆæœå›¾", &s_low, s_max, on_Trackbar);
+		createTrackbar("s_high", "æ•ˆæœå›¾", &s_high, s_max, on_Trackbar);
 
-		createTrackbar("v_low", "Ğ§¹ûÍ¼", &v_low, h_max, on_Trackbar);
-		createTrackbar("v_high", "Ğ§¹ûÍ¼", &v_high, h_max, on_Trackbar);
+		createTrackbar("v_low", "æ•ˆæœå›¾", &v_low, v_max, on_Trackbar);
+		createTrackbar("v_high", "æ•ˆæœå›¾", &v_high, v_max, on_Trackbar);
 
-		//createTrackbar("erodeÄÚºË", "mask", &erode_structElementSize, 21, on_Trackbar);
-		createTrackbar("dilateÄÚºË", "mask", &dilate_structElementSize, 21, on_Trackbar);
-		//createTrackbar("Í¸Ã÷Öµ", "Ğ§¹ûÍ¼", &AlphaValueSilder, 100, on_Trackbar_Alpha);
+		createTrackbar("dilateå†…æ ¸", "mask", &dilate_structElementSize, 21, on_Trackbar);
+		createTrackbar("è·ç¦»å€¼", "è·ç¦»å›¾", &value, 200, on_Trackbar);
 
-		//À¶Ä»µÄÑÕÉ«·¶Î§£¬½«½á¹û´æÔÚmaskÖĞ
+		//è·ç¦»å›¾value
+		distance(frame, value);
 
-		inRange(hsv, Scalar(100, 130, 80), Scalar(124, 255, 255), mask);
+		imshow("è·ç¦»å›¾", dist);
+
+		//è“å¹•çš„é¢œè‰²èŒƒå›´ï¼Œå°†ç»“æœå­˜åœ¨maskä¸­
+		inRange(hsv, Scalar(100, s_low, v_low), Scalar(124, s_high, v_max), mask);
 		//inRange(hsv, Scalar(100, 120, 46), Scalar(124, 255, 255), mask);
-		//¶Ômask½øĞĞĞÎÌ¬Ñ§²Ù×÷
-		//¶¨ÒåÒ»¸ö½á¹¹
+		//å¯¹maskè¿›è¡Œå½¢æ€å­¦æ“ä½œ
+		//å®šä¹‰ä¸€ä¸ªç»“æ„
 		Mat k = getStructuringElement(MORPH_RECT, Size(3, 3), Point(-1, -1));
-		//¶Ômask½øĞĞĞÎÌ¬Ñ§±Õ²Ù×÷
+		//å¯¹maskè¿›è¡Œå½¢æ€å­¦é—­æ“ä½œ
 		morphologyEx(mask, mask, MORPH_CLOSE, k);
 		//erode(mask, mask, k);
 
-		//¶Ômask½øĞĞ¸¯Ê´ÅòÕÍÎ¢µ÷
+		//å¯¹maskè¿›è¡Œè…èš€è†¨èƒ€å¾®è°ƒ
 		mask = erode_and_dilate(mask, dilate_structElementSize);
 
-		//¸ßË¹Ä£ºı
+		//é«˜æ–¯æ¨¡ç³Š
 		GaussianBlur(mask, mask, Size(9, 9),11);
+
 		//bitwise_not(mask, mask);
 		//threshold(mask, mask, 124, 255, thresh_binary);
+
 		Mat result = replace_and_blend(frame, mask, framebg);
-		char c = waitKey(38);//ÑÓÊ±30ms
-		if (c == 27)//Èç¹û°´ÏÂESCÄÇÃ´¾ÍÍË³ö
+		char c = waitKey(38);//å»¶æ—¶30ms
+		if (c == 27)//å¦‚æœæŒ‰ä¸‹ESCé‚£ä¹ˆå°±é€€å‡º
 			break;
 
 		write << result;
-		imshow("Ğ§¹ûÍ¼", result);
+		imshow("æ•ˆæœå›¾", result);
 
 		if (currentFrames == totalFrames - 1)
 		{
@@ -151,19 +150,49 @@ int main()
 	return 0;
 }
 
-//Í¸Ã÷¶È
+//é€æ˜åº¦
 //void on_Trackbar_Alpha(int , void*)
 //{
 //	Mat alpha = addAlpha();
-//	//µ±Ç°AlphaValueÏà¶ÔÓÚ×î´óµÄ±ÈÀı
+//	//å½“å‰AlphaValueç›¸å¯¹äºæœ€å¤§çš„æ¯”ä¾‹
 //	double AlphaValue = (double)AlphaValueSilder / 100;
 //	//beta
 //	double beta= (1.0 - AlphaValue);
 //    
 //}
 
+//distanceå›¾
 
-//¸¯Ê´
+void distance(cv::Mat &frame, int value)
+{
+	dist = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
+	int b, g, r;
+	double dis;
+	int height = frame.rows;
+	int width = frame.cols;
+	for (int i = 0; i < height; i++){
+		uchar *presult = dist.ptr<uchar>(i);
+		uchar *pbg = frame.ptr<uchar>(i);
+		for (int j = 0; j < width; j++)
+		{
+			b = *pbg++;
+			g = *pbg++;
+			r = *pbg++;
+			dis = sqrt(pow((b - 230), 2) + pow((g - 126), 2) + pow((r - 61), 2));
+			if (dis <= value){
+				*presult++ = 0;
+			}
+			else
+			{
+				*presult++ = dis;
+			}
+			//cout << dis <<"   ";
+		}
+	}
+	GaussianBlur(dist, dist, Size(9, 9), 11);
+}
+
+//è…èš€
 Mat erode_and_dilate(Mat &mask, int dilate_structElementSize)
 {
 	Mat new_mask;
@@ -175,70 +204,100 @@ Mat erode_and_dilate(Mat &mask, int dilate_structElementSize)
 }
 
 
-//¶ÔÊÓÆµµÄÃ¿Ò»Ö¡µÄÍ¼Ïñ½øĞĞ´¦Àí
+
+
+//å¯¹è§†é¢‘çš„æ¯ä¸€å¸§çš„å›¾åƒè¿›è¡Œå¤„ç†
 Mat replace_and_blend(Mat &frame, Mat &mask, Mat &background)
 {
 
 	imshow("mask", mask);
-	//´´½¨Ò»ÕÅ½á¹ûÍ¼
+	//åˆ›å»ºä¸€å¼ ç»“æœå›¾
 	Mat result = Mat(frame.size(), frame.type());
-	//Í¼ÏñµÄ¸ß ¿í ÓëÍ¨µÀÊı
+	//å›¾åƒçš„é«˜ å®½ ä¸é€šé“æ•°
 	int height = result.rows;
 	int width = result.cols;
 	int channels = result.channels();
 	//int nstep = width*channels;
 
 	// replace and blend
-	int m = 0;//maskµÄÏñËØÖµ
-	double wt = 0;//ÈÚºÏµÄ±ÈÀı
+	int m = 0;//maskçš„åƒç´ å€¼
+	double wt = 0;//èåˆçš„æ¯”ä¾‹
 
-	int r = 0, g = 0, b = 0;//Êä³öµÄÏñËØ
+	int r = 0, g = 0, b = 0;//è¾“å‡ºçš„åƒç´ 
 	int r1 = 0, g1 = 0, b1 = 0;
 	int r2 = 0, g2 = 0, b2 = 0;
 	for (int i = 0; i < height; i++)
 	{
-		//¶¨ÒåÃ¿Ò»ĞĞ Ã¿Ò»Ö¡Í¼ÏñµÄÖ¸Õë£¬maskÍ¼ÏñµÄÖ¸Õë£¬Á½ÕÅ±³¾°Í¼µÄÖ¸Õë,½á¹ûÍ¼µÄÖ¸Õë
+		//å®šä¹‰æ¯ä¸€è¡Œ æ¯ä¸€å¸§å›¾åƒçš„æŒ‡é’ˆï¼Œmaskå›¾åƒçš„æŒ‡é’ˆï¼Œä¸¤å¼ èƒŒæ™¯å›¾çš„æŒ‡é’ˆ,ç»“æœå›¾çš„æŒ‡é’ˆ
 		uchar *pbg = background.ptr<uchar>(i);
 		uchar *pframe = frame.ptr<uchar>(i);
 		uchar *pmask = mask.ptr<uchar>(i);
 		uchar *presult = result.ptr<uchar>(i);
+		uchar *pdist = dist.ptr<uchar>(i);
 		for (int j = 0; j < width; j++)
 		{
-			m = *pmask++;//¶ÁÈ¡maskµÄÏñËØÖµ
-			if (m == 253)//Èç¹ûÊÇ±³¾°µÄ»°
+			m = *pmask++;//è¯»å–maskçš„åƒç´ å€¼
+			if (m == 253)//å¦‚æœæ˜¯èƒŒæ™¯çš„è¯
 			{
-				//½øĞĞÈı¸öÍ¨µÀµÄ¸³Öµ
+				//è¿›è¡Œä¸‰ä¸ªé€šé“çš„èµ‹å€¼
 				*presult++ = *pbg++;
 				*presult++ = *pbg++;
 				*presult++ = *pbg++;
-				pframe += 3;//½«frameµÄÍ¼ÏñµÄÏñËØµÄÍ¨µÀÒ²ÒÆ¶¯µ¥¸ö±£³ÖÒ»ÖÂ
+				pframe += 3;//å°†frameçš„å›¾åƒçš„åƒç´ çš„é€šé“ä¹Ÿç§»åŠ¨å•ä¸ªä¿æŒä¸€è‡´
+				pdist ++; //å•é€šé“
 			}
-			else if (m == 0)//Èç¹ûÊÇÇ°¾°µÄ»°
+			else if (m == 0)//å¦‚æœæ˜¯å‰æ™¯çš„è¯
 			{
-				//½øĞĞÈı¸öÍ¨µÀµÄ¸³Öµ
-				*presult++ = *pframe++;
-				*presult++ = *pframe++;
-				*presult++ = *pframe++;
-				pbg += 3;//½«frameµÄÍ¼ÏñµÄÏñËØµÄÍ¨µÀÒ²ÒÆ¶¯µ¥¸ö±£³ÖÒ»ÖÂ
+				//è¿›è¡Œä¸‰ä¸ªé€šé“çš„èµ‹å€¼
+				if (*pdist++ == 0)
+				{
+					//èƒŒæ™¯å›¾æ¯ä¸ªåƒç´ çš„ä¸‰ä¸ªé€šé“
+					b1 = *pbg++;
+					g1 = *pbg++;
+					r1 = *pbg++;
+
+					//æ¯ä¸€å¸§æ¯ä¸€ä¸ªåƒç´ çš„ä¸‰ä¸ªé€šé“
+					b2 = *pframe++;
+					g2 = *pframe++;
+					r2 = *pframe++;
+					// æ··åˆ
+					wt = 1;
+					b = b1 * wt + b2 * (1.0 - wt);
+					g = g1 * wt + g2 * (1.0 - wt);
+					r = r1 * wt + r2 * (1.0 - wt);
+
+					*presult++ = b;
+					*presult++ = g;
+					*presult++ = r;
+					//pframe += 3;//å°†frameçš„å›¾åƒçš„åƒç´ çš„é€šé“ä¹Ÿç§»åŠ¨å•ä¸ªä¿æŒä¸€è‡´
+				}
+				else
+				{
+					*presult++ = *pframe++;
+					*presult++ = *pframe++;
+					*presult++ = *pframe++;
+					pbg += 3;//å°†frameçš„å›¾åƒçš„åƒç´ çš„é€šé“ä¹Ÿç§»åŠ¨å•ä¸ªä¿æŒä¸€è‡´
+				}
 			}
 			else
 			{
-				//±³¾°Í¼Ã¿¸öÏñËØµÄÈı¸öÍ¨µÀ
+				//èƒŒæ™¯å›¾æ¯ä¸ªåƒç´ çš„ä¸‰ä¸ªé€šé“
 				b1 = *pbg++;
 				g1 = *pbg++;
 				r1 = *pbg++;
 
-				//Ã¿Ò»Ö¡Ã¿Ò»¸öÏñËØµÄÈı¸öÍ¨µÀ
+				//æ¯ä¸€å¸§æ¯ä¸€ä¸ªåƒç´ çš„ä¸‰ä¸ªé€šé“
 				b2 = *pframe++;
 				g2 = *pframe++;
 				r2 = *pframe++;
 
-				// È¨ÖØ
+				pdist ++;
+				// æƒé‡
 				wt = m / 255.0;
 				wt *= 2.5;
 				wt = min(wt, 1.0);
 				//cout << wt << endl;
-				// »ìºÏ
+				// æ··åˆ
 				b = b1 * wt + b2 * (1.0 - wt);
 				g = g1 * wt + g2 * (1.0 - wt);
 				r = r1 * wt + r2 * (1.0 - wt);
@@ -249,18 +308,18 @@ Mat replace_and_blend(Mat &frame, Mat &mask, Mat &background)
 			}
 
 		}
-			//ºÚ±³¾°
+			//é»‘èƒŒæ™¯
 			//for (int j = 0; j < width; j++)
 			//{
-			//	m = *pmask++;//¶ÁÈ¡maskµÄÏñËØÖµ
-			//	if (m == 0)//Èç¹ûÊÇ±³¾°µÄ»°
+			//	m = *pmask++;//è¯»å–maskçš„åƒç´ å€¼
+			//	if (m == 0)//å¦‚æœæ˜¯èƒŒæ™¯çš„è¯
 			//	{
-			//		//½øĞĞÈı¸öÍ¨µÀµÄ¸³Öµ
+					//è¿›è¡Œä¸‰ä¸ªé€šé“çš„èµ‹å€¼
 			//		*presult++ = 0;
 			//		*presult++ = 0;
 			//		*presult++ = 0;
 			//		pbg += 3;
-			//		pframe += 3;//½«frameµÄÍ¼ÏñµÄÏñËØµÄÍ¨µÀÒ²ÒÆ¶¯µ¥¸ö±£³ÖÒ»ÖÂ
+			//		pframe += 3;//å°†frameçš„å›¾åƒçš„åƒç´ çš„é€šé“ä¹Ÿç§»åŠ¨å•ä¸ªä¿æŒä¸€kè‡´
 			//	}
 			//	else
 			//	{
